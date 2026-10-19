@@ -327,18 +327,52 @@ UrlText.BackgroundTransparency = 1
 UrlText.Text = "https://سوبر-بوبو.com"
 UrlText.Font = Enum.Font.Code
 UrlText.TextSize = 10
-UrlText.TextColor3 = Color3.fromRGB(255, 255, 255)
+UrlText.TextColor3 = Color3.fromRGB(0, 0, 0)
 UrlText.TextXAlignment = Enum.TextXAlignment.Left
 UrlText.Parent = UrlBar
 
-local UrlTextGradient = Instance.new("UIGradient")
-UrlTextGradient.Color = ColorSequence.new({
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(0, 0, 0)
+Stroke.Thickness = 1.5
+Stroke.Parent = UrlText
+
+local Gradient = Instance.new("UIGradient")
+Gradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 0, 0)),
+    ColorSequenceKeypoint.new(0.4, Color3.fromRGB(0, 0, 0)),
     ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+    ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
 })
-UrlTextGradient.Parent = UrlText
+Gradient.Parent = Stroke
+
+task.spawn(function()
+    while UrlText.Parent do
+        Gradient.Offset = Vector2.new(-1, 0)
+
+        local Forward = TweenService:Create(
+            Gradient,
+            TweenInfo.new(3, Enum.EasingStyle.Linear),
+            {Offset = Vector2.new(1, 0)}
+        )
+
+        Forward:Play()
+        Forward.Completed:Wait()
+
+        if not UrlText.Parent then
+            break
+        end
+
+        local Backward = TweenService:Create(
+            Gradient,
+            TweenInfo.new(3, Enum.EasingStyle.Linear),
+            {Offset = Vector2.new(-1, 0)}
+        )
+
+        Backward:Play()
+        Backward.Completed:Wait()
+    end
+end)
 
 local SearchBox = Instance.new("TextBox")
 SearchBox.Size = UDim2.new(1, -16, 0, 28)
