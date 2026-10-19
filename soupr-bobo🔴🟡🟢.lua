@@ -154,7 +154,7 @@ local AvatarImg = Instance.new("ImageLabel")
 AvatarImg.Size = UDim2.new(0, 55, 0, 55)
 AvatarImg.Position = UDim2.new(0, 8, 0.5, -27)
 AvatarImg.BackgroundColor3 = Color3.fromRGB(10, 12, 16)
-AvatarImg.Image = "rbxassetid://0"
+AvatarImg.Image = "rbxassetid://138416968546636"
 AvatarImg.Parent = Card
 
 local AvatarCorner = Instance.new("UICorner")
@@ -203,10 +203,10 @@ local DisplayNameLbl = CreateInfoLabel(2)
 local IdLbl = CreateInfoLabel(3)
 local JoinedLbl = CreateInfoLabel(4)
 
-NameLbl.Text = "User: -"
-DisplayNameLbl.Text = "Username: -"
-IdLbl.Text = "ID: -"
-JoinedLbl.Text = "Joined: -"
+NameLbl.Text = "User: "
+DisplayNameLbl.Text = "Username: "
+IdLbl.Text = "ID: "
+JoinedLbl.Text = "Joined: "
 
 local ActionBtn = Instance.new("TextButton")
 ActionBtn.Size = UDim2.new(1, -16, 0, 32)
