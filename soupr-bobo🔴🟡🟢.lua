@@ -646,7 +646,7 @@ ActionBtn.Size = UDim2.new(1, -16, 0, 32)
 ActionBtn.Position = UDim2.new(0, 8, 0, 230)
 ActionBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
 ActionBtn.BackgroundTransparency = 0.4
-ActionBtn.Text = "تخريب اللاعب 😂"
+ActionBtn.Text = "تخريب اللاعب 🟢"
 ActionBtn.Font = Enum.Font.GothamBold
 ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ActionBtn.TextSize = 12
@@ -740,7 +740,7 @@ FreezeBtn.Size = UDim2.new(1, -16, 0, 32)
 FreezeBtn.Position = UDim2.new(0, 8, 0, 306)
 FreezeBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
 FreezeBtn.BackgroundTransparency = 0.4
-FreezeBtn.Text = "🚫 ما يمديه يتحرك"
+FreezeBtn.Text = "🟢 ما يمديه يتحرك"
 FreezeBtn.Font = Enum.Font.GothamBold
 FreezeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 FreezeBtn.TextSize = 12
@@ -877,7 +877,7 @@ ActionBtn.MouseButton1Click:Connect(function()
 	TrollingActive = not TrollingActive
 	
 	if TrollingActive then
-		ActionBtn.Text = "تخريب اللاعب 😂"
+		ActionBtn.Text = "تخريب اللاعب 🟢"
 		
 		task.spawn(function()
 			local signal, prefix = GetSignalAndPrefix()
@@ -921,7 +921,7 @@ ActionBtn.MouseButton1Click:Connect(function()
 			end
 		end)
 	else
-		ActionBtn.Text = "تخريب اللاعب 😂"
+		ActionBtn.Text = "تخريب اللاعب 🔴"
 	end
 end)
 
@@ -944,7 +944,7 @@ FreezeBtn.MouseButton1Click:Connect(function()
 	FreezingActive = not FreezingActive
 	
 	if FreezingActive then
-		FreezeBtn.Text = "🚫 ما يمديه يتحرك"
+		FreezeBtn.Text = "🟢 ما يمديه يتحرك"
 		
 		task.spawn(function()
 			while FreezingActive do
@@ -967,6 +967,6 @@ FreezeBtn.MouseButton1Click:Connect(function()
 			end
 		end)
 	else
-		FreezeBtn.Text = "🚫 ما يمديه يتحرك"
+		FreezeBtn.Text = "🔴 ما يمديه يتحرك"
 	end
 end)
