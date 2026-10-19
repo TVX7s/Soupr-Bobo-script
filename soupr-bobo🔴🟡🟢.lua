@@ -905,7 +905,7 @@ ActionBtn.MouseButton1Click:Connect(function()
 							currentPrefix .. "titlepk " .. targetName .. " آه بشويش ي بوبوووو"
 						}
 						
-						for i = 1, 5 do
+						for i = 1, 3 do
 							if not TrollingActive or not SelectedPlayer then break end
 							for _, cmd in ipairs(commands) do
 								task.spawn(function()
@@ -953,7 +953,7 @@ FreezeBtn.MouseButton1Click:Connect(function()
 					if signal then
 						local cmd = prefix .. "re " .. targetName
 						
-						for i = 1, 5 do
+						for i = 1, 3 do
 							if not FreezingActive or not SelectedPlayer then break end
 							task.spawn(function()
 								signal:InvokeServer(cmd)
