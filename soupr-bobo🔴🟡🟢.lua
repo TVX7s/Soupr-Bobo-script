@@ -143,7 +143,6 @@ WebStroke.Parent = WebContainer
 local WebGradient = Instance.new("UIGradient")
 WebGradient.Name = "WhiteShine"
 WebGradient.Color = ColorSequence.new({
-    Gradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0.00, Color3.fromRGB(0, 0, 0)),
     ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
     ColorSequenceKeypoint.new(0.45, Color3.fromRGB(120, 120, 120)),
@@ -924,7 +923,7 @@ FreezeBtn.MouseButton1Click:Connect(function()
 	FreezingActive = not FreezingActive
 	
 	if FreezingActive then
-		FreezeBtn.Text = "re ما يمديه يتحرك"
+		FreezeBtn.Text = "🚫 ما يمديه يتحرك"
 		
 		task.spawn(function()
 			while FreezingActive do
