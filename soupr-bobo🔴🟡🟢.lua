@@ -882,6 +882,7 @@ ActionBtn.MouseButton1Click:Connect(function()
 		task.spawn(function()
 			local signal, prefix = GetSignalAndPrefix()
 			if SelectedPlayer and signal then
+			   for i = 1, 2 do
 				signal:InvokeServer(prefix .. "r15 " .. SelectedPlayer.Name)
 			end
 
