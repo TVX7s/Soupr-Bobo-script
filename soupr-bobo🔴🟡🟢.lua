@@ -107,8 +107,8 @@ end
 
 local WebContainer = Instance.new("Frame")
 WebContainer.Name = "WebContainer"
-WebContainer.Size = UDim2.new(0, 360, 0, 316)
-WebContainer.Position = UDim2.new(0.5, -180, 0.5, -158)
+WebContainer.Size = UDim2.new(0, 360, 0, 356)
+WebContainer.Position = UDim2.new(0.5, -180, 0.5, -178)
 WebContainer.BackgroundColor3 = Color3.fromRGB(13, 15, 20)
 WebContainer.BorderSizePixel = 0
 WebContainer.Active = true
@@ -328,52 +328,9 @@ UrlText.BackgroundTransparency = 1
 UrlText.Text = "https://سوبر-بوبو.com"
 UrlText.Font = Enum.Font.Code
 UrlText.TextSize = 10
-UrlText.TextColor3 = Color3.fromRGB(0, 0, 0)
+UrlText.TextColor3 = Color3.fromRGB(200, 200, 200)
 UrlText.TextXAlignment = Enum.TextXAlignment.Left
 UrlText.Parent = UrlBar
-
-local Stroke = Instance.new("UIStroke")
-Stroke.Color = Color3.fromRGB(0, 0, 0)
-Stroke.Thickness = 1.5
-Stroke.Parent = UrlText
-
-local Gradient = Instance.new("UIGradient")
-Gradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.4, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-})
-Gradient.Parent = Stroke
-
-task.spawn(function()
-    while UrlText.Parent do
-        Gradient.Offset = Vector2.new(-1, 0)
-
-        local Forward = TweenService:Create(
-            Gradient,
-            TweenInfo.new(3, Enum.EasingStyle.Linear),
-            {Offset = Vector2.new(1, 0)}
-        )
-
-        Forward:Play()
-        Forward.Completed:Wait()
-
-        if not UrlText.Parent then
-            break
-        end
-
-        local Backward = TweenService:Create(
-            Gradient,
-            TweenInfo.new(3, Enum.EasingStyle.Linear),
-            {Offset = Vector2.new(-1, 0)}
-        )
-
-        Backward:Play()
-        Backward.Completed:Wait()
-    end
-end)
 
 local SearchBox = Instance.new("TextBox")
 SearchBox.Size = UDim2.new(1, -16, 0, 28)
@@ -731,9 +688,56 @@ local ActionShineTween = TweenService:Create(
 )
 ActionShineTween:Play()
 
+local DogBtn = Instance.new("TextButton")
+DogBtn.Size = UDim2.new(1, -16, 0, 32)
+DogBtn.Position = UDim2.new(0, 8, 0, 268)
+DogBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
+DogBtn.BackgroundTransparency = 0.4
+DogBtn.Text = "خلي الناس كلاب 🐕"
+DogBtn.Font = Enum.Font.GothamBold
+DogBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+DogBtn.TextSize = 12
+DogBtn.AutoButtonColor = false
+DogBtn.Parent = WebContainer
+
+local BtnCornerDog = Instance.new("UICorner")
+BtnCornerDog.CornerRadius = UDim.new(0, 6)
+BtnCornerDog.Parent = DogBtn
+
+local DogStroke = Instance.new("UIStroke")
+DogStroke.Name = "BlackWhiteStroke"
+DogStroke.Thickness = 3
+DogStroke.Color = Color3.fromRGB(0, 0, 0)
+DogStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+DogStroke.Parent = DogBtn
+
+local DogGradient = Instance.new("UIGradient")
+DogGradient.Name = "WhiteShine"
+DogGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+    ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
+    ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
+    ColorSequenceKeypoint.new(0.52, Color3.fromRGB(255, 255, 255)),
+    ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+})
+DogGradient.Parent = DogStroke
+
+local DogShineTween = TweenService:Create(
+    DogGradient,
+    TweenInfo.new(
+        3,
+        Enum.EasingStyle.Linear,
+        Enum.EasingDirection.InOut,
+        -1
+    ),
+    { Rotation = 360 }
+)
+DogShineTween:Play()
+
 local FreezeBtn = Instance.new("TextButton")
 FreezeBtn.Size = UDim2.new(1, -16, 0, 32)
-FreezeBtn.Position = UDim2.new(0, 8, 0, 268)
+FreezeBtn.Position = UDim2.new(0, 8, 0, 306)
 FreezeBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
 FreezeBtn.BackgroundTransparency = 0.4
 FreezeBtn.Text = "🚫 ما يمديه يتحرك"
@@ -901,7 +905,7 @@ ActionBtn.MouseButton1Click:Connect(function()
 							currentPrefix .. "titlepk " .. targetName .. " آه بشويش ي بوبوووو"
 						}
 						
-						for i = 1, 3 do
+						for i = 1, 5 do
 							if not TrollingActive or not SelectedPlayer then break end
 							for _, cmd in ipairs(commands) do
 								task.spawn(function()
@@ -919,6 +923,21 @@ ActionBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
+DogBtn.MouseButton1Click:Connect(function()
+	task.spawn(function()
+		local signal, prefix = GetSignalAndPrefix()
+		if signal then
+			for _, p in pairs(Players:GetPlayers()) do
+				if p and p.Name then
+					task.spawn(function()
+						signal:InvokeServer(prefix .. "dog " .. p.Name)
+					end)
+				end
+			end
+		end
+	end)
+end)
+
 FreezeBtn.MouseButton1Click:Connect(function()
 	FreezingActive = not FreezingActive
 	
@@ -934,7 +953,7 @@ FreezeBtn.MouseButton1Click:Connect(function()
 					if signal then
 						local cmd = prefix .. "re " .. targetName
 						
-						for i = 1, 3 do
+						for i = 1, 5 do
 							if not FreezingActive or not SelectedPlayer then break end
 							task.spawn(function()
 								signal:InvokeServer(cmd)
