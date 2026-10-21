@@ -1,47 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -49,66 +5,24 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local SoundService = game:GetService("SoundService")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
 pcall(function()
 	setfpscap(999)
 end)
 
-local function OptimizeObject(v)
-	pcall(function()
-		if v:IsA("BasePart") then
-			v.Material = Enum.Material.SmoothPlastic
-			v.Reflectance = 0
-
-			if v:IsA("MeshPart") then
-				v.RenderFidelity = Enum.RenderFidelity.Performance
-			end
-
-		elseif v:IsA("PostEffect") then
-			v.Enabled = false
-
-		elseif v:IsA("ParticleEmitter") then
-			v.Enabled = false
-			v.Rate = 0
-
-		elseif v:IsA("Trail") or v:IsA("Beam") then
-			v.Enabled = false
-
-		elseif v:IsA("Smoke")
-			or v:IsA("Fire")
-			or v:IsA("Sparkles") then
-			v.Enabled = false
-
-		elseif v:IsA("Explosion") then
-			v.Visible = false
-		end
-	end)
-end
-
 pcall(function()
 	Lighting.GlobalShadows = false
-	Lighting.FogEnd = 1000000000
-	Lighting.Brightness = 1
-
-	settings().Rendering.QualityLevel =
-		Enum.QualityLevel.Level01
-
-	for _, v in ipairs(Lighting:GetChildren()) do
-		if v:IsA("PostEffect") then
+	Lighting.FogEnd = 9e9
+	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+	for _, v in pairs(game:GetDescendants()) do
+		if v:IsA("BasePart") then
+			v.Material = Enum.Material.SmoothPlastic
+		elseif v:IsA("PostEffect") or v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
 			v.Enabled = false
 		end
 	end
-
-	for _, v in ipairs(Workspace:GetDescendants()) do
-		OptimizeObject(v)
-	end
-end)
-
-Workspace.DescendantAdded:Connect(function(v)
-	task.defer(OptimizeObject, v)
 end)
 
 pcall(function()
@@ -203,8 +117,26 @@ local BackgroundImagesList = {
 	"rbxthumb://type=Asset&w=420&h=420&id=122508098279948"
 }
 
-local function GetRandomBackground()
-	return BackgroundImagesList[math.random(1, #BackgroundImagesList)]
+local PremiumList = {
+	["zZzE_041"] = true
+}
+
+local ChosenBgImage = BackgroundImagesList[math.random(1, #BackgroundImagesList)]
+
+local function GetSignalAndPrefix()
+	local prefix = ";"
+	pcall(function()
+		local custom = LocalPlayer.PlayerGui.HDAdminInterface.MainFrame.Pages.Settings.Custom["AE1 Prefix"].SettingValue.TextBox.Text
+		if custom and custom ~= "" then
+			prefix = custom
+		end
+	end)
+
+	local hdClient = ReplicatedStorage:FindFirstChild("HDAdminHDClient") or ReplicatedStorage:WaitForChild("HDAdminHDClient", 1)
+	local signals = hdClient and (hdClient:FindFirstChild("Signals") or hdClient:WaitForChild("Signals", 1))
+	local signal = signals and (signals:FindFirstChild("RequestCommandSilent") or signals:WaitForChild("RequestCommandSilent", 1))
+
+	return signal, prefix
 end
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -226,7 +158,7 @@ end)
 local function PlayClickSound()
 	pcall(function()
 		local sound = Instance.new("Sound")
-		sound.SoundId = "rbxassetid://6008891144"
+		sound.SoundId = "rbxassetid://4590657391"
 		sound.Volume = 1
 		sound.Parent = SoundService
 		sound:Play()
@@ -245,147 +177,140 @@ local function PlayNotifySound()
 	end)
 end
 
-local function SendNotification(title, text, customImage)
+local function SendCustomNotification(titleText, bodyText, imageId)
 	PlayNotifySound()
-	pcall(function()
-		local notifyGui = ScreenGui:FindFirstChild("NotificationContainer")
-		if not notifyGui then
-			notifyGui = Instance.new("Frame")
-			notifyGui.Name = "NotificationContainer"
-			notifyGui.Size = UDim2.new(0, 260, 1, 0)
-			notifyGui.Position = UDim2.new(1, -270, 0, 0)
-			notifyGui.BackgroundTransparency = 1
-			notifyGui.Parent = ScreenGui
-			
-			local list = Instance.new("UIListLayout")
-			list.FillDirection = Enum.FillDirection.Vertical
-			list.VerticalAlignment = Enum.VerticalAlignment.Top
-			list.HorizontalAlignment = Enum.HorizontalAlignment.Right
-			list.Padding = UDim.new(0, 10)
-			list.Parent = notifyGui
-			
-			local pad = Instance.new("UIPadding")
-			pad.PaddingTop = UDim.new(0, 15)
-			pad.Parent = notifyGui
-		end
+	local NotifFrame = Instance.new("Frame")
+	NotifFrame.Name = "CustomNotif"
+	NotifFrame.Size = UDim2.new(0, 280, 0, 65)
+	NotifFrame.Position = UDim2.new(1, 10, 0, 20)
+	NotifFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+	NotifFrame.BorderSizePixel = 0
+	NotifFrame.ZIndex = 100
+	NotifFrame.Parent = ScreenGui
+
+	local NotifBg = Instance.new("ImageLabel")
+	NotifBg.Size = UDim2.new(1, 0, 1, 0)
+	NotifBg.BackgroundTransparency = 1
+	NotifBg.Image = ChosenBgImage
+	NotifBg.ScaleType = Enum.ScaleType.Crop
+	NotifBg.ImageTransparency = 0.5
+	NotifBg.ZIndex = 100
+	NotifBg.Parent = NotifFrame
+
+	local NotifCorner = Instance.new("UICorner")
+	NotifCorner.CornerRadius = UDim.new(0, 8)
+	NotifCorner.Parent = NotifFrame
+	
+	local NotifBgCorner = Instance.new("UICorner")
+	NotifBgCorner.CornerRadius = UDim.new(0, 8)
+	NotifBgCorner.Parent = NotifBg
+
+	local NotifStroke = Instance.new("UIStroke")
+	NotifStroke.Thickness = 2
+	NotifStroke.Color = Color3.fromRGB(0, 0, 0)
+	NotifStroke.Parent = NotifFrame
+
+	if imageId then
+		local NotifImg = Instance.new("ImageLabel")
+		NotifImg.Size = UDim2.new(0, 45, 0, 45)
+		NotifImg.Position = UDim2.new(0, 10, 0.5, -22)
+		NotifImg.BackgroundTransparency = 1
+		NotifImg.Image = imageId
+		NotifImg.ZIndex = 101
+		NotifImg.Parent = NotifFrame
 		
-		local notifBox = Instance.new("Frame")
-		notifBox.Size = UDim2.new(0, 250, 0, 70)
-		notifBox.BackgroundColor3 = Color3.fromRGB(13, 15, 20)
-		notifBox.BackgroundTransparency = 0.1
-		notifBox.BorderSizePixel = 0
-		notifBox.Parent = notifyGui
-		
-		local notifBg = Instance.new("ImageLabel")
-		notifBg.Size = UDim2.new(1, 0, 1, 0)
-		notifBg.BackgroundTransparency = 1
-		notifBg.Image = customImage or GetRandomBackground()
-		notifBg.ScaleType = Enum.ScaleType.Crop
-		notifBg.ZIndex = 0
-		notifBg.Parent = notifBox
-		
-		local darkOverlay = Instance.new("Frame")
-		darkOverlay.Size = UDim2.new(1, 0, 1, 0)
-		darkOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		darkOverlay.BackgroundTransparency = 0.5
-		darkOverlay.BorderSizePixel = 0
-		darkOverlay.ZIndex = 1
-		darkOverlay.Parent = notifBox
-		
-		local c = Instance.new("UICorner")
-		c.CornerRadius = UDim.new(0, 8)
-		c.Parent = notifBox
-		
-		local c2 = Instance.new("UICorner")
-		c2.CornerRadius = UDim.new(0, 8)
-		c2.Parent = notifBg
-		
-		local c3 = Instance.new("UICorner")
-		c3.CornerRadius = UDim.new(0, 8)
-		c3.Parent = darkOverlay
-		
-		local stroke = Instance.new("UIStroke")
-		stroke.Thickness = 2
-		stroke.Color = Color3.fromRGB(255, 255, 255)
-		stroke.Parent = notifBox
-		
-		local titleLbl = Instance.new("TextLabel")
-		titleLbl.Size = UDim2.new(1, -16, 0, 20)
-		titleLbl.Position = UDim2.new(0, 8, 0, 6)
-		titleLbl.BackgroundTransparency = 1
-		titleLbl.Text = title
-		titleLbl.Font = Enum.Font.GothamBold
-		titleLbl.TextSize = 12
-		titleLbl.TextColor3 = Color3.fromRGB(255, 215, 0)
-		titleLbl.TextXAlignment = Enum.TextXAlignment.Left
-		titleLbl.ZIndex = 2
-		titleLbl.Parent = notifBox
-		
-		local textLbl = Instance.new("TextLabel")
-		textLbl.Size = UDim2.new(1, -16, 0, 36)
-		textLbl.Position = UDim2.new(0, 8, 0, 26)
-		textLbl.BackgroundTransparency = 1
-		textLbl.Text = text
-		textLbl.Font = Enum.Font.Gotham
-		textLbl.TextSize = 10
-		textLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-		textLbl.TextXAlignment = Enum.TextXAlignment.Left
-		textLbl.TextWrapped = true
-		textLbl.ZIndex = 2
-		textLbl.Parent = notifBox
-		
-		notifBox.Position = UDim2.new(1, 300, 0, 0)
-		TweenService:Create(notifBox, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
-		
-		task.delay(3, function()
-			local tweenOut = TweenService:Create(notifBox, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(1, 300, 0, 0)})
-			tweenOut:Play()
-			tweenOut.Completed:Connect(function()
-				notifBox:Destroy()
-			end)
+		local ImgCorner = Instance.new("UICorner")
+		ImgCorner.CornerRadius = UDim.new(0, 6)
+		ImgCorner.Parent = NotifImg
+	end
+
+	local TextOffsetX = imageId and 65 or 10
+	local TitleLbl = Instance.new("TextLabel")
+	TitleLbl.Size = UDim2.new(1, -TextOffsetX - 10, 0, 20)
+	TitleLbl.Position = UDim2.new(0, TextOffsetX, 0, 8)
+	TitleLbl.BackgroundTransparency = 1
+	TitleLbl.Text = titleText
+	TitleLbl.Font = Enum.Font.GothamBold
+	TitleLbl.TextSize = 12
+	TitleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	TitleLbl.ZIndex = 101
+	TitleLbl.Parent = NotifFrame
+
+	local BodyLbl = Instance.new("TextLabel")
+	BodyLbl.Size = UDim2.new(1, -TextOffsetX - 10, 0, 30)
+	BodyLbl.Position = UDim2.new(0, TextOffsetX, 0, 28)
+	BodyLbl.BackgroundTransparency = 1
+	BodyLbl.Text = bodyText
+	BodyLbl.Font = Enum.Font.Gotham
+	BodyLbl.TextSize = 10
+	BodyLbl.TextColor3 = Color3.fromRGB(220, 220, 220)
+	BodyLbl.TextWrapped = true
+	BodyLbl.TextXAlignment = Enum.TextXAlignment.Left
+	BodyLbl.ZIndex = 101
+	BodyLbl.Parent = NotifFrame
+
+	TweenService:Create(NotifFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+		Position = UDim2.new(1, -290, 0, 20)
+	}):Play()
+
+	task.delay(3.5, function()
+		local tw = TweenService:Create(NotifFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+			Position = UDim2.new(1, 10, 0, 20)
+		})
+		tw:Play()
+		tw.Completed:Connect(function()
+			NotifFrame:Destroy()
 		end)
 	end)
 end
 
 if LocalPlayer.Name == "zZzE_041" then
-	task.delay(1, function()
-		SendNotification("ادارة سوبر بوبو", "انت محمي من جميع اوامر الاستهداف")
-	end)
+	SendCustomNotification("ادارة سوبر بوبو", "انت محمي من جميع اوامر الاستهداف", nil)
 end
 
-local HttpService = game:GetService("HttpService")
-local oldGetScript = nil
-pcall(function()
-	oldGetScript = game:HttpGet(script.Parent and script.Parent.Name or "")
-end)
+local ToggleBtn = Instance.new("ImageButton")
+ToggleBtn.Name = "ToggleBtn"
+ToggleBtn.Size = UDim2.new(0, 45, 0, 45)
+ToggleBtn.Position = UDim2.new(1, -55, 0.5, -22)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+ToggleBtn.Image = ChosenBgImage
+ToggleBtn.ScaleType = Enum.ScaleType.Crop
+ToggleBtn.Active = true
+ToggleBtn.Draggable = true
+ToggleBtn.Parent = ScreenGui
 
-task.spawn(function()
-	while true do
-		task.wait(2)
-		pcall(function()
-			if game:HttpGet then
-				-- check script updates
-			end
-		end)
-	end
-end)
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(1, 0)
+ToggleCorner.Parent = ToggleBtn
+
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Thickness = 2
+ToggleStroke.Color = Color3.fromRGB(255, 255, 255)
+ToggleStroke.Parent = ToggleBtn
 
 local WebContainer = Instance.new("Frame")
 WebContainer.Name = "WebContainer"
-WebContainer.Size = UDim2.new(0, 400, 0, 480)
-WebContainer.Position = UDim2.new(0.5, -200, 0.5, -240)
+WebContainer.Size = UDim2.new(0, 400, 0, 520)
+WebContainer.Position = UDim2.new(0.5, -200, 0.5, -260)
 WebContainer.BackgroundColor3 = Color3.fromRGB(13, 15, 20)
 WebContainer.BorderSizePixel = 0
 WebContainer.Active = true
 WebContainer.Draggable = true
 WebContainer.Parent = ScreenGui
 
+ToggleBtn.MouseButton1Click:Connect(function()
+	PlayClickSound()
+	TweenService:Create(ToggleBtn, TweenInfo.new(0.2), {Rotation = ToggleBtn.Rotation + 90}):Play()
+	WebContainer.Visible = not WebContainer.Visible
+end)
+
 local BackgroundImage = Instance.new("ImageLabel")
 BackgroundImage.Name = "BackgroundImage"
 BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
 BackgroundImage.Position = UDim2.new(0, 0, 0, 0)
 BackgroundImage.BackgroundTransparency = 1
-BackgroundImage.Image = GetRandomBackground()
+BackgroundImage.Image = ChosenBgImage
 BackgroundImage.ScaleType = Enum.ScaleType.Crop
 BackgroundImage.ZIndex = 0
 BackgroundImage.Parent = WebContainer
@@ -430,12 +355,25 @@ local WebShineTween = TweenService:Create(
 )
 WebShineTween:Play()
 
+local MainContentFrame = Instance.new("Frame")
+MainContentFrame.Name = "MainContentFrame"
+MainContentFrame.Size = UDim2.new(1, 0, 1, 0)
+MainContentFrame.BackgroundTransparency = 1
+MainContentFrame.Parent = WebContainer
+
+local ChangeBgFrame = Instance.new("Frame")
+ChangeBgFrame.Name = "ChangeBgFrame"
+ChangeBgFrame.Size = UDim2.new(1, 0, 1, 0)
+ChangeBgFrame.BackgroundTransparency = 1
+ChangeBgFrame.Visible = false
+ChangeBgFrame.Parent = WebContainer
+
 local BrowserHeader = Instance.new("Frame")
 BrowserHeader.Name = "BrowserHeader"
 BrowserHeader.Size = UDim2.new(1, 0, 0, 28)
 BrowserHeader.BackgroundColor3 = Color3.fromRGB(20, 23, 31)
 BrowserHeader.BorderSizePixel = 0
-BrowserHeader.Parent = WebContainer
+BrowserHeader.Parent = MainContentFrame
 
 local HeaderCorner = Instance.new("UICorner")
 HeaderCorner.CornerRadius = UDim.new(0, 8)
@@ -603,14 +541,14 @@ SearchBox.Size = UDim2.new(1, -16, 0, 28)
 SearchBox.Position = UDim2.new(0, 8, 0, 34)
 SearchBox.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
 SearchBox.BackgroundTransparency = 0.4
-SearchBox.PlaceholderText = "🔍 اسم اللاعب..."
+SearchBox.PlaceholderText = "اسم اللاعب..."
 SearchBox.PlaceholderColor3 = Color3.fromRGB(110, 120, 140)
 SearchBox.Text = ""
 SearchBox.Font = Enum.Font.GothamMedium
 SearchBox.TextSize = 11
 SearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 SearchBox.ClearTextOnFocus = false
-SearchBox.Parent = WebContainer
+SearchBox.Parent = MainContentFrame
 
 local SearchCorner = Instance.new("UICorner")
 SearchCorner.CornerRadius = UDim.new(0, 6)
@@ -659,7 +597,7 @@ CmdBarBox.Font = Enum.Font.GothamMedium
 CmdBarBox.TextSize = 11
 CmdBarBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 CmdBarBox.ClearTextOnFocus = false
-CmdBarBox.Parent = WebContainer
+CmdBarBox.Parent = MainContentFrame
 
 local CmdCorner = Instance.new("UICorner")
 CmdCorner.CornerRadius = UDim.new(0, 6)
@@ -706,7 +644,7 @@ HelpBtn.Font = Enum.Font.GothamBold
 HelpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 HelpBtn.TextSize = 14
 HelpBtn.AutoButtonColor = false
-HelpBtn.Parent = WebContainer
+HelpBtn.Parent = MainContentFrame
 
 local HelpCorner = Instance.new("UICorner")
 HelpCorner.CornerRadius = UDim.new(0, 6)
@@ -745,7 +683,7 @@ HelpShineTween:Play()
 
 HelpBtn.MouseButton1Click:Connect(function()
 	PlayClickSound()
-	SendNotification("ملاحظة \"?\"", "فايدة خانة الاوامر لما تكتب اي امر محد يقدر يشوفك")
+	SendCustomNotification("ملاحظة \"?\"", "فايدة خانة الاوامر لما تكتب اي امر محد يقدر تشوفك", nil)
 end)
 
 local Card = Instance.new("Frame")
@@ -754,7 +692,7 @@ Card.Position = UDim2.new(0, 8, 0, 100)
 Card.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
 Card.BackgroundTransparency = 0.4
 Card.BorderSizePixel = 0
-Card.Parent = WebContainer
+Card.Parent = MainContentFrame
 
 local CardCorner = Instance.new("UICorner")
 CardCorner.CornerRadius = UDim.new(0, 6)
@@ -908,222 +846,54 @@ DisplayNameLbl.Text = "Username: "
 IdLbl.Text = "ID: "
 JoinedLbl.Text = "Joined: "
 
-local ActionBtn = Instance.new("TextButton")
-ActionBtn.Size = UDim2.new(1, -16, 0, 32)
-ActionBtn.Position = UDim2.new(0, 8, 0, 230)
-ActionBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
-ActionBtn.BackgroundTransparency = 0.4
-ActionBtn.Text = "تخريب اللاعب 🔴"
-ActionBtn.Font = Enum.Font.GothamBold
-ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ActionBtn.TextSize = 12
-ActionBtn.AutoButtonColor = false
-ActionBtn.Parent = WebContainer
+local ButtonsContainer = Instance.new("Frame")
+ButtonsContainer.Size = UDim2.new(1, -16, 0, 280)
+ButtonsContainer.Position = UDim2.new(0, 8, 0, 230)
+ButtonsContainer.BackgroundTransparency = 1
+ButtonsContainer.Parent = MainContentFrame
 
-local BtnCorner1 = Instance.new("UICorner")
-BtnCorner1.CornerRadius = UDim.new(0, 6)
-BtnCorner1.Parent = ActionBtn
+local ButtonsList = Instance.new("UIListLayout")
+ButtonsList.SortOrder = Enum.SortOrder.LayoutOrder
+ButtonsList.Padding = UDim.new(0, 6)
+ButtonsList.Parent = ButtonsContainer
 
-local ActionStroke = Instance.new("UIStroke")
-ActionStroke.Name = "BlackWhiteStroke"
-ActionStroke.Thickness = 3
-ActionStroke.Color = Color3.fromRGB(0, 0, 0)
-ActionStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-ActionStroke.Parent = ActionBtn
+local function CreateStyledButton(text, order)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 0, 32)
+	btn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
+	btn.BackgroundTransparency = 0.4
+	btn.Text = text
+	btn.Font = Enum.Font.GothamBold
+	btn.TextColor3 = Color3.fromRGB(255, 0, 0)
+	btn.TextSize = 12
+	btn.AutoButtonColor = false
+	btn.LayoutOrder = order
+	btn.Parent = ButtonsContainer
 
-local ActionGradient = Instance.new("UIGradient")
-ActionGradient.Name = "WhiteShine"
-ActionGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.52, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-})
-ActionGradient.Parent = ActionStroke
+	local btnImg = Instance.new("ImageLabel")
+	btnImg.Size = UDim2.new(1, 0, 1, 0)
+	btnImg.BackgroundTransparency = 1
+	btnImg.Image = ChosenBgImage
+	btnImg.ScaleType = Enum.ScaleType.Crop
+	btnImg.ImageTransparency = 0.75
+	btnImg.Parent = btn
 
-local ActionShineTween = TweenService:Create(
-    ActionGradient,
-    TweenInfo.new(
-        3,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1
-    ),
-    { Rotation = 360 }
-)
-ActionShineTween:Play()
+	local BtnCorner = Instance.new("UICorner")
+	BtnCorner.CornerRadius = UDim.new(0, 6)
+	BtnCorner.Parent = btn
 
-local DogBtn = Instance.new("TextButton")
-DogBtn.Size = UDim2.new(1, -16, 0, 32)
-DogBtn.Position = UDim2.new(0, 8, 0, 268)
-DogBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
-DogBtn.BackgroundTransparency = 0.4
-DogBtn.Text = "خلي الناس كلاب 🐕"
-DogBtn.Font = Enum.Font.GothamBold
-DogBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-DogBtn.TextSize = 12
-DogBtn.AutoButtonColor = false
-DogBtn.Parent = WebContainer
+	local BtnImgCorner = Instance.new("UICorner")
+	BtnImgCorner.CornerRadius = UDim.new(0, 6)
+	BtnImgCorner.Parent = btnImg
 
-local BtnCornerDog = Instance.new("UICorner")
-BtnCornerDog.CornerRadius = UDim.new(0, 6)
-BtnCornerDog.Parent = DogBtn
+	local BtnStroke = Instance.new("UIStroke")
+	BtnStroke.Thickness = 3
+	BtnStroke.Color = Color3.fromRGB(0, 0, 0)
+	BtnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	BtnStroke.Parent = btn
 
-local DogStroke = Instance.new("UIStroke")
-DogStroke.Name = "BlackWhiteStroke"
-DogStroke.Thickness = 3
-DogStroke.Color = Color3.fromRGB(0, 0, 0)
-DogStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-DogStroke.Parent = DogBtn
-
-local DogGradient = Instance.new("UIGradient")
-DogGradient.Name = "WhiteShine"
-DogGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.52, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-})
-DogGradient.Parent = DogStroke
-
-local DogShineTween = TweenService:Create(
-    DogGradient,
-    TweenInfo.new(
-        3,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1
-    ),
-    { Rotation = 360 }
-)
-DogShineTween:Play()
-
-local FreezeBtn = Instance.new("TextButton")
-FreezeBtn.Size = UDim2.new(1, -16, 0, 32)
-FreezeBtn.Position = UDim2.new(0, 8, 0, 306)
-FreezeBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
-FreezeBtn.BackgroundTransparency = 0.4
-FreezeBtn.Text = "🔴 ما يمديه يتحرك"
-FreezeBtn.Font = Enum.Font.GothamBold
-FreezeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-FreezeBtn.TextSize = 12
-FreezeBtn.AutoButtonColor = false
-FreezeBtn.Parent = WebContainer
-
-local BtnCorner2 = Instance.new("UICorner")
-BtnCorner2.CornerRadius = UDim.new(0, 6)
-BtnCorner2.Parent = FreezeBtn
-
-local FreezeStroke = Instance.new("UIStroke")
-FreezeStroke.Name = "BlackWhiteStroke"
-FreezeStroke.Thickness = 3
-FreezeStroke.Color = Color3.fromRGB(0, 0, 0)
-FreezeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-FreezeStroke.Parent = FreezeBtn
-
-local FreezeGradient = Instance.new("UIGradient")
-FreezeGradient.Name = "WhiteShine"
-FreezeGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.52, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-})
-FreezeGradient.Parent = FreezeStroke
-
-local FreezeShineTween = TweenService:Create(
-    FreezeGradient,
-    TweenInfo.new(
-        3,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1
-    ),
-    { Rotation = 360 }
-)
-FreezeShineTween:Play()
-
-local SizeBtn = Instance.new("TextButton")
-SizeBtn.Size = UDim2.new(1, -16, 0, 32)
-SizeBtn.Position = UDim2.new(0, 8, 0, 344)
-SizeBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
-SizeBtn.BackgroundTransparency = 0.4
-SizeBtn.Text = "تكبير الناس 🗿"
-SizeBtn.Font = Enum.Font.GothamBold
-SizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-SizeBtn.TextSize = 12
-SizeBtn.AutoButtonColor = false
-SizeBtn.Parent = WebContainer
-
-local BtnCornerSize = Instance.new("UICorner")
-BtnCornerSize.CornerRadius = UDim.new(0, 6)
-BtnCornerSize.Parent = SizeBtn
-
-local SizeStroke = Instance.new("UIStroke")
-SizeStroke.Name = "BlackWhiteStroke"
-SizeStroke.Thickness = 3
-SizeStroke.Color = Color3.fromRGB(0, 0, 0)
-SizeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-SizeStroke.Parent = SizeBtn
-
-local SizeGradient = Instance.new("UIGradient")
-SizeGradient.Name = "WhiteShine"
-SizeGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.52, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-})
-SizeGradient.Parent = SizeStroke
-
-local SizeShineTween = TweenService:Create(
-    SizeGradient,
-    TweenInfo.new(
-        3,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1
-    ),
-    { Rotation = 360 }
-)
-SizeShineTween:Play()
-
-local AdminProtectBtn = nil
-if LocalPlayer.Name == "zZzE_041" then
-	AdminProtectBtn = Instance.new("TextButton")
-	AdminProtectBtn.Size = UDim2.new(1, -16, 0, 32)
-	AdminProtectBtn.Position = UDim2.new(0, 8, 0, 382)
-	AdminProtectBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
-	AdminProtectBtn.BackgroundTransparency = 0.4
-	AdminProtectBtn.Text = "حماية الادمن 🛡️ 🔴"
-	AdminProtectBtn.Font = Enum.Font.GothamBold
-	AdminProtectBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	AdminProtectBtn.TextSize = 12
-	AdminProtectBtn.AutoButtonColor = false
-	AdminProtectBtn.Parent = WebContainer
-
-	local BtnCornerAP = Instance.new("UICorner")
-	BtnCornerAP.CornerRadius = UDim.new(0, 6)
-	BtnCornerAP.Parent = AdminProtectBtn
-
-	local APStroke = Instance.new("UIStroke")
-	APStroke.Name = "BlackWhiteStroke"
-	APStroke.Thickness = 3
-	APStroke.Color = Color3.fromRGB(0, 0, 0)
-	APStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	APStroke.Parent = AdminProtectBtn
-
-	local APGradient = Instance.new("UIGradient")
-	APGradient.Name = "WhiteShine"
-	APGradient.Color = ColorSequence.new({
+	local BtnGradient = Instance.new("UIGradient")
+	BtnGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
 		ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
 		ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
@@ -1131,60 +901,35 @@ if LocalPlayer.Name == "zZzE_041" then
 		ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 0, 0)),
 		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
 	})
-	APGradient.Parent = APStroke
+	BtnGradient.Parent = BtnStroke
 
-	local APShineTween = TweenService:Create(
-		APGradient,
+	local ShineTween = TweenService:Create(
+		BtnGradient,
 		TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
 		{ Rotation = 360 }
 	)
-	APShineTween:Play()
-end
+	ShineTween:Play()
 
-local ToggleCircleBtn = Instance.new("ImageButton")
-ToggleCircleBtn.Size = UDim2.new(0, 40, 0, 40)
-ToggleCircleBtn.Position = UDim2.new(1, -50, 1, -60)
-ToggleCircleBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
-ToggleCircleBtn.Image = BackgroundImage.Image
-ToggleCircleBtn.ScaleType = Enum.ScaleType.Crop
-ToggleCircleBtn.Parent = ScreenGui
-
-local CircleCorner = Instance.new("UICorner")
-CircleCorner.CornerRadius = UDim.new(1, 0)
-CircleCorner.Parent = ToggleCircleBtn
-
-local CircleStroke = Instance.new("UIStroke")
-CircleStroke.Thickness = 2
-CircleStroke.Color = Color3.fromRGB(255, 255, 255)
-CircleStroke.Parent = ToggleCircleBtn
-
-local isGuiVisible = true
-ToggleCircleBtn.MouseButton1Click:Connect(function()
-	PlayClickSound()
-	isGuiVisible = not isGuiVisible
-	WebContainer.Visible = isGuiVisible
-	local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	TweenService:Create(ToggleCircleBtn, tweenInfo, {Rotation = ToggleCircleBtn.Rotation + 180}):Play()
-end)
-
-local function ApplyButtonAnimation(btn)
-	btn.MouseButton1Click:Connect(function()
-		PlayClickSound()
-		local tw = TweenService:Create(btn, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = btn.Size - UDim2.new(0, 4, 0, 2)})
-		tw:Play()
-		tw.Completed:Connect(function()
-			TweenService:Create(btn, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = btn.Size + UDim2.new(0, 4, 0, 2)}):Play()
-		end)
+	btn.MouseButton1Down:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(0.98, 0, 0, 30)}):Play()
 	end)
+
+	btn.MouseButton1Up:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, 32)}):Play()
+	end)
+
+	return btn
 end
 
-ApplyButtonAnimation(ActionBtn)
-ApplyButtonAnimation(DogBtn)
-ApplyButtonAnimation(FreezeBtn)
-ApplyButtonAnimation(SizeBtn)
-ApplyButtonAnimation(HelpBtn)
-if AdminProtectBtn then
-	ApplyButtonAnimation(AdminProtectBtn)
+local ActionBtn = CreateStyledButton("تخريب اللاعب", 1)
+local DogBtn = CreateStyledButton("خلي الناس كلاب", 2)
+local FreezeBtn = CreateStyledButton("ما يمديه يتحرك", 3)
+local SizeBtn = CreateStyledButton("تكبير الناس", 4)
+local ChangeBgBtn = CreateStyledButton("تغيير صورة الخلفية", 5)
+
+local AdminProtectBtn = nil
+if PremiumList[LocalPlayer.Name] then
+	AdminProtectBtn = CreateStyledButton("حماية الادمن", 6)
 end
 
 local SelectedPlayer = nil
@@ -1192,30 +937,30 @@ local TrollingActive = false
 local FreezingActive = false
 local AdminProtectActive = false
 
+local function ResetTargetState()
+	TrollingActive = false
+	FreezingActive = false
+	ActionBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
+	FreezeBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
+	SelectedPlayer = nil
+	SearchBox.Text = ""
+	NameLbl.Text = "User: "
+	DisplayNameLbl.Text = "Username: "
+	IdLbl.Text = "ID: "
+	JoinedLbl.Text = "Joined: "
+	AvatarImg.Image = "rbxassetid://0"
+end
+
 local function GetPlayerByShortcut(text)
 	text = text:lower()
 	if text == "" then return nil end
 	for _, p in pairs(Players:GetPlayers()) do
-		if p.Name:lower() == "zrze_041" or p.Name:lower() == "zZzE_041".lower() then
-			-- protected
-		end
 		if p.Name:lower():sub(1, #text) == text or p.DisplayName:lower():sub(1, #text) == text then
 			return p
 		end
 	end
 	return nil
 end
-
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-	local query = SearchBox.Text:lower()
-	if query:find("zzze_041") then
-		SearchBox.Text = ""
-		SendNotification("System سوبر بوبو", "ما يمديك تستهدف هذا اليوزر لانه محمي من السكربت")
-		return
-	end
-	local found = GetPlayerByShortcut(SearchBox.Text)
-	UpdateUI(found)
-end)
 
 local function GetJoinDate(userId)
 	local success, result = pcall(function()
@@ -1245,59 +990,35 @@ local function UpdateUI(target)
 			JoinedLbl.Text = "Joined: " .. dateStr
 		end)
 	else
-		SelectedPlayer = nil
-		NameLbl.Text = "User: "
-		DisplayNameLbl.Text = "Username: "
-		IdLbl.Text = "ID: "
-		JoinedLbl.Text = "Joined: "
-		AvatarImg.Image = "rbxassetid://0"
+		ResetTargetState()
 	end
 end
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	local txt = SearchBox.Text
+	if txt:find("zZzE_041") then
+		local protectedPlayerInServer = Players:FindFirstChild("zZzE_041")
+		if protectedPlayerInServer then
+			SearchBox.Text = ""
+			SendCustomNotification("System سوبر بوبو", "ما يمديك تستهدف هذا اليوزر لانه محمي من السكربت", nil)
+			return
+		end
+	end
+	local found = GetPlayerByShortcut(txt)
+	UpdateUI(found)
+end)
 
 Players.PlayerRemoving:Connect(function(player)
 	if SelectedPlayer and player == SelectedPlayer then
-		local pName = player.Name
-		local thumb = ""
-		pcall(function()
-			thumb = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
-		end)
-		
-		UpdateUI(nil)
-		SearchBox.Text = ""
-		
-		if TrollingActive then
-			TrollingActive = false
-			ActionBtn.Text = "تخريب اللاعب 🔴"
-			ActionBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
-		end
-		if FreezingActive then
-			FreezingActive = false
-			FreezeBtn.Text = "🔴 ما يمديه يتحرك"
-			FreezeBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
-		end
-		
-		SendNotification("B O B O ~ T E A M", "الضحية هجت من السيرفر", thumb)
+		local victimImg = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+		ResetTargetState()
+		SendCustomNotification("B O B O ~ T E A M", "الضحية هجت من السيرفر", victimImg)
 	end
 end)
 
-local function GetSignalAndPrefix()
-	local prefix = ";"
-	pcall(function()
-		local custom = LocalPlayer.PlayerGui.HDAdminInterface.MainFrame.Pages.Settings.Custom["AE1 Prefix"].SettingValue.TextBox.Text
-		if custom and custom ~= "" then
-			prefix = custom
-		end
-	end)
-
-	local hdClient = ReplicatedStorage:FindFirstChild("HDAdminHDClient") or ReplicatedStorage:WaitForChild("HDAdminHDClient", 1)
-	local signals = hdClient and (hdClient:FindFirstChild("Signals") or hdClient:WaitForChild("Signals", 1))
-	local signal = signals and (signals:FindFirstChild("RequestCommandSilent") or signals:WaitForChild("RequestCommandSilent", 1))
-
-	return signal, prefix
-end
-
 CmdBarBox.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
+		PlayClickSound()
 		local txt = CmdBarBox.Text
 		if txt ~= "" then
 			local signal, prefix = GetSignalAndPrefix()
@@ -1307,7 +1028,7 @@ CmdBarBox.FocusLost:Connect(function(enterPressed)
 					fullCmd = prefix .. txt
 				end
 				signal:InvokeServer(fullCmd)
-				SendNotification("System بوبو", "Executed .. \"" .. txt .. "\"")
+				SendCustomNotification("System بوبو", "Executed .. \"" .. txt .. "\"", nil)
 			end
 			CmdBarBox.Text = ""
 		end
@@ -1315,11 +1036,11 @@ CmdBarBox.FocusLost:Connect(function(enterPressed)
 end)
 
 ActionBtn.MouseButton1Click:Connect(function()
+	PlayClickSound()
 	TrollingActive = not TrollingActive
 	
 	if TrollingActive then
-		ActionBtn.Text = "تخريب اللاعب 🟢"
-		ActionBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+		ActionBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
 		
 		task.spawn(function()
 			local signal, prefix = GetSignalAndPrefix()
@@ -1363,12 +1084,12 @@ ActionBtn.MouseButton1Click:Connect(function()
 			end
 		end)
 	else
-		ActionBtn.Text = "تخريب اللاعب 🔴"
-		ActionBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
+		ActionBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
 	end
 end)
 
 DogBtn.MouseButton1Click:Connect(function()
+	PlayClickSound()
 	task.spawn(function()
 		local signal, prefix = GetSignalAndPrefix()
 		if signal then
@@ -1384,6 +1105,7 @@ DogBtn.MouseButton1Click:Connect(function()
 end)
 
 SizeBtn.MouseButton1Click:Connect(function()
+	PlayClickSound()
 	task.spawn(function()
 		local signal, prefix = GetSignalAndPrefix()
 		if signal then
@@ -1399,11 +1121,11 @@ SizeBtn.MouseButton1Click:Connect(function()
 end)
 
 FreezeBtn.MouseButton1Click:Connect(function()
+	PlayClickSound()
 	FreezingActive = not FreezingActive
 	
 	if FreezingActive then
-		FreezeBtn.Text = "🟢 ما يمديه يتحرك"
-		FreezeBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+		FreezeBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
 		
 		task.spawn(function()
 			while FreezingActive do
@@ -1426,32 +1148,109 @@ FreezeBtn.MouseButton1Click:Connect(function()
 			end
 		end)
 	else
-		FreezeBtn.Text = "ما يمديه يتحرك 🔴"
-		FreezeBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
+		FreezeBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
 	end
 end)
 
 if AdminProtectBtn then
 	AdminProtectBtn.MouseButton1Click:Connect(function()
+		PlayClickSound()
 		AdminProtectActive = not AdminProtectActive
 		if AdminProtectActive then
-			AdminProtectBtn.Text = "حماية الادمن 🛡️ 🟢"
-			AdminProtectBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-			
-			task.spawn(function()
-				while AdminProtectActive do
-					pcall(function()
-						local signal, prefix = GetSignalAndPrefix()
-						if signal then
-							signal:InvokeServer(prefix .. "re " .. LocalPlayer.Name)
-						end
-					end)
-					task.wait(1)
-				end
-			end)
+			AdminProtectBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
 		else
-			AdminProtectBtn.Text = "حماية الادمن 🛡️ 🔴"
-			AdminProtectBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
+			AdminProtectBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
 		end
 	end)
 end
+
+task.spawn(function()
+	while task.wait(1) do
+		if AdminProtectActive then
+			local signal, prefix = GetSignalAndPrefix()
+			if signal then
+				signal:InvokeServer(prefix .. "re " .. LocalPlayer.Name)
+			end
+		end
+	end
+end)
+
+local BgTitle = Instance.new("TextLabel")
+BgTitle.Size = UDim2.new(1, 0, 0, 40)
+BgTitle.Position = UDim2.new(0, 0, 0, 10)
+BgTitle.BackgroundTransparency = 1
+BgTitle.Text = "اختر صورة الخلفية"
+BgTitle.Font = Enum.Font.GothamBold
+BgTitle.TextSize = 14
+BgTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+BgTitle.Parent = ChangeBgFrame
+
+local ScrollBg = Instance.new("ScrollingFrame")
+ScrollBg.Size = UDim2.new(1, -20, 1, -60)
+ScrollBg.Position = UDim2.new(0, 10, 0, 50)
+ScrollBg.BackgroundTransparency = 1
+ScrollBg.BorderSizePixel = 0
+ScrollBg.CanvasSize = UDim2.new(0, 0, 0, 600)
+ScrollBg.Parent = ChangeBgFrame
+
+local Grid = Instance.new("UIGridLayout")
+Grid.CellSize = UDim2.new(0, 110, 0, 110)
+Grid.CellPadding = UDim2.new(0, 10, 0, 10)
+Grid.Parent = ScrollBg
+
+local function ApplyNewBg(imgUrl)
+	ChosenBgImage = imgUrl
+	ScreenGui:Destroy()
+	task.wait(0.1)
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/"))()
+end
+
+for idx, imgUrl in ipairs(BackgroundImagesList) do
+	local ImgSquare = Instance.new("ImageButton")
+	ImgSquare.Image = imgUrl
+	ImgSquare.ScaleType = Enum.ScaleType.Crop
+	ImgSquare.Parent = ScrollBg
+	
+	local SquareCorner = Instance.new("UICorner")
+	SquareCorner.CornerRadius = UDim.new(0, 8)
+	SquareCorner.Parent = ImgSquare
+
+	local SquareStroke = Instance.new("UIStroke")
+	SquareStroke.Thickness = 2
+	SquareStroke.Color = Color3.fromRGB(255, 255, 255)
+	SquareStroke.Parent = ImgSquare
+
+	ImgSquare.MouseButton1Click:Connect(function()
+		PlayClickSound()
+		BackgroundImage.Image = imgUrl
+		ToggleBtn.Image = imgUrl
+		ChangeBgFrame.Visible = false
+		MainContentFrame.Visible = true
+	end)
+end
+
+ChangeBgBtn.MouseButton1Click:Connect(function()
+	PlayClickSound()
+	MainContentFrame.Visible = false
+	ChangeBgFrame.Visible = true
+end)
+
+task.spawn(function()
+	while task.wait(0.5) do
+		if WebContainer and WebContainer.Parent then
+			pcall(function()
+				WebContainer.Visible = WebContainer.Visible
+			end)
+		end
+	end
+end)
+
+pcall(function()
+	if getgenv and getgenv().ScriptAlreadyLoaded then
+		SendCustomNotification("UPDATE SCRIPT", "تم تحديث السكربت يتم اعادة دخول السيرفر …", nil)
+		task.wait(1.5)
+		TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+	else
+		if getgenv then getgenv().ScriptAlreadyLoaded = true end
+	end
+end)
