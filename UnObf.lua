@@ -1202,7 +1202,7 @@ local function ApplyNewBg(imgUrl)
 	ChosenBgImage = imgUrl
 	ScreenGui:Destroy()
 	task.wait(0.1)
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/"))()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/TVX7s/Soupr-Bobo-script/refs/heads/main/soupr-bobo🔴🟡🟢.lua"))()
 end
 
 for idx, imgUrl in ipairs(BackgroundImagesList) do
