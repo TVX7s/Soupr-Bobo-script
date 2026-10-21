@@ -8,6 +8,23 @@ local SoundService = game:GetService("SoundService")
 local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
+local TrollingSettings = {
+	wormify = true,
+	dog = true,
+	aura = true,
+	shine = true,
+	color = true,
+	fat = true,
+	thin = true,
+	size = true,
+	height = true,
+	sit = true,
+	titlepk = true
+}
+
+local CopySpeedMode = "slow"
+local MultiplierValue = 1
+
 pcall(function()
 	setfpscap(999)
 end)
@@ -123,6 +140,21 @@ local PremiumList = {
 
 local ChosenBgImage = BackgroundImagesList[math.random(1, #BackgroundImagesList)]
 
+local DynamicBgElements = {}
+
+local function RegisterDynamicBg(instance)
+	table.insert(DynamicBgElements, instance)
+end
+
+local function UpdateAllBgElements(newImg)
+	ChosenBgImage = newImg
+	for _, inst in ipairs(DynamicBgElements) do
+		if inst and inst.Parent then
+			inst.Image = newImg
+		end
+	end
+end
+
 local function GetSignalAndPrefix()
 	local prefix = ";"
 	pcall(function()
@@ -196,6 +228,7 @@ local function SendCustomNotification(titleText, bodyText, imageId)
 	NotifBg.ImageTransparency = 0.5
 	NotifBg.ZIndex = 100
 	NotifBg.Parent = NotifFrame
+	RegisterDynamicBg(NotifBg)
 
 	local NotifCorner = Instance.new("UICorner")
 	NotifCorner.CornerRadius = UDim.new(0, 8)
@@ -279,6 +312,7 @@ ToggleBtn.ScaleType = Enum.ScaleType.Crop
 ToggleBtn.Active = true
 ToggleBtn.Draggable = true
 ToggleBtn.Parent = ScreenGui
+RegisterDynamicBg(ToggleBtn)
 
 local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(1, 0)
@@ -314,6 +348,7 @@ BackgroundImage.Image = ChosenBgImage
 BackgroundImage.ScaleType = Enum.ScaleType.Crop
 BackgroundImage.ZIndex = 0
 BackgroundImage.Parent = WebContainer
+RegisterDynamicBg(BackgroundImage)
 
 local WebCorner = Instance.new("UICorner")
 WebCorner.CornerRadius = UDim.new(0, 8)
@@ -355,11 +390,25 @@ local WebShineTween = TweenService:Create(
 )
 WebShineTween:Play()
 
-local MainContentFrame = Instance.new("Frame")
-MainContentFrame.Name = "MainContentFrame"
-MainContentFrame.Size = UDim2.new(1, 0, 1, 0)
-MainContentFrame.BackgroundTransparency = 1
-MainContentFrame.Parent = WebContainer
+local TargetPageFrame = Instance.new("Frame")
+TargetPageFrame.Name = "TargetPageFrame"
+TargetPageFrame.Size = UDim2.new(1, 0, 1, 0)
+TargetPageFrame.BackgroundTransparency = 1
+TargetPageFrame.Parent = WebContainer
+
+local OtherPageFrame = Instance.new("Frame")
+OtherPageFrame.Name = "OtherPageFrame"
+OtherPageFrame.Size = UDim2.new(1, 0, 1, 0)
+OtherPageFrame.BackgroundTransparency = 1
+OtherPageFrame.Visible = false
+OtherPageFrame.Parent = WebContainer
+
+local SettingsPageFrame = Instance.new("Frame")
+SettingsPageFrame.Name = "SettingsPageFrame"
+SettingsPageFrame.Size = UDim2.new(1, 0, 1, 0)
+SettingsPageFrame.BackgroundTransparency = 1
+SettingsPageFrame.Visible = false
+SettingsPageFrame.Parent = WebContainer
 
 local ChangeBgFrame = Instance.new("Frame")
 ChangeBgFrame.Name = "ChangeBgFrame"
@@ -368,85 +417,105 @@ ChangeBgFrame.BackgroundTransparency = 1
 ChangeBgFrame.Visible = false
 ChangeBgFrame.Parent = WebContainer
 
-local BrowserHeader = Instance.new("Frame")
-BrowserHeader.Name = "BrowserHeader"
-BrowserHeader.Size = UDim2.new(1, 0, 0, 28)
-BrowserHeader.BackgroundColor3 = Color3.fromRGB(20, 23, 31)
-BrowserHeader.BorderSizePixel = 0
-BrowserHeader.Parent = MainContentFrame
+local NavHeader = Instance.new("Frame")
+NavHeader.Name = "NavHeader"
+NavHeader.Size = UDim2.new(1, -16, 0, 26)
+NavHeader.Position = UDim2.new(0, 8, 0, 30)
+NavHeader.BackgroundTransparency = 1
+NavHeader.ZIndex = 10
+NavHeader.Parent = WebContainer
 
-local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 8)
-HeaderCorner.Parent = BrowserHeader
+local NavLayout = Instance.new("UIListLayout")
+NavLayout.FillDirection = Enum.FillDirection.Horizontal
+NavLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+NavLayout.Padding = UDim.new(0, 6)
+NavLayout.Parent = NavHeader
 
-local BrowserHeaderStroke = Instance.new("UIStroke")
-BrowserHeaderStroke.Name = "BlackWhiteStroke"
-BrowserHeaderStroke.Thickness = 3
-BrowserHeaderStroke.Color = Color3.fromRGB(0, 0, 0)
-BrowserHeaderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-BrowserHeaderStroke.Parent = BrowserHeader
+local function CreateNavButton(text)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 115, 1, 0)
+	btn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
+	btn.BackgroundTransparency = 0.4
+	btn.Text = text
+	btn.Font = Enum.Font.GothamBold
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.TextSize = 10
+	btn.ZIndex = 11
+	btn.Parent = NavHeader
 
-local BrowserHeaderGradient = Instance.new("UIGradient")
-BrowserHeaderGradient.Name = "WhiteShine"
-BrowserHeaderGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.52, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-})
-BrowserHeaderGradient.Parent = BrowserHeaderStroke
+	local btnImg = Instance.new("ImageLabel")
+	btnImg.Size = UDim2.new(1, 0, 1, 0)
+	btnImg.BackgroundTransparency = 1
+	btnImg.Image = ChosenBgImage
+	btnImg.ScaleType = Enum.ScaleType.Crop
+	btnImg.ImageTransparency = 0.75
+	btnImg.ZIndex = 10
+	btnImg.Parent = btn
+	RegisterDynamicBg(btnImg)
 
-local BrowserHeaderShineTween = TweenService:Create(
-    BrowserHeaderGradient,
-    TweenInfo.new(
-        3,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1
-    ),
-    { Rotation = 360 }
-)
-BrowserHeaderShineTween:Play()
-
-local FixBottomCorner = Instance.new("Frame")
-FixBottomCorner.Size = UDim2.new(1, 0, 0, 8)
-FixBottomCorner.Position = UDim2.new(0, 0, 1, -8)
-FixBottomCorner.BackgroundColor3 = Color3.fromRGB(20, 23, 31)
-FixBottomCorner.BorderSizePixel = 0
-FixBottomCorner.Parent = BrowserHeader
-
-local DotsHolder = Instance.new("Frame")
-DotsHolder.Size = UDim2.new(0, 50, 1, 0)
-DotsHolder.Position = UDim2.new(0, 8, 0, 0)
-DotsHolder.BackgroundTransparency = 1
-DotsHolder.Parent = BrowserHeader
-
-local DotLayout = Instance.new("UIListLayout")
-DotLayout.FillDirection = Enum.FillDirection.Horizontal
-DotLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-DotLayout.Padding = UDim.new(0, 5)
-DotLayout.Parent = DotsHolder
-
-local function CreateDot(color)
-	local d = Instance.new("Frame")
-	d.Size = UDim2.new(0, 10, 0, 10)
-	d.BackgroundColor3 = color
-	d.BorderSizePixel = 0
-	d.Parent = DotsHolder
 	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(1, 0)
-	c.Parent = d
-	local DotStroke = Instance.new("UIStroke")
-	DotStroke.Name = "BlackWhiteStroke"
-	DotStroke.Thickness = 3
-	DotStroke.Color = Color3.fromRGB(0, 0, 0)
-	DotStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	DotStroke.Parent = d
-	local DotGradient = Instance.new("UIGradient")
-	DotGradient.Name = "WhiteShine"
-	DotGradient.Color = ColorSequence.new({
+	c.CornerRadius = UDim.new(0, 4)
+	c.Parent = btn
+	local ic = Instance.new("UICorner")
+	ic.CornerRadius = UDim.new(0, 4)
+	ic.Parent = btnImg
+
+	local s = Instance.new("UIStroke")
+	s.Thickness = 2
+	s.Color = Color3.fromRGB(0, 0, 0)
+	s.Parent = btn
+
+	return btn
+end
+
+local NavTargetBtn = CreateNavButton("الاستهداف")
+local NavOtherBtn = CreateNavButton("اخرى")
+local NavSettingsBtn = CreateNavButton("الاعدادات")
+
+local function SwitchPage(page)
+	TargetPageFrame.Visible = (page == "Target")
+	OtherPageFrame.Visible = (page == "Other")
+	SettingsPageFrame.Visible = (page == "Settings")
+	ChangeBgFrame.Visible = (page == "Bg")
+end
+
+NavTargetBtn.MouseButton1Click:Connect(function()
+	PlayClickSound()
+	SwitchPage("Target")
+end)
+
+NavOtherBtn.MouseButton1Click:Connect(function()
+	PlayClickSound()
+	SwitchPage("Other")
+end)
+
+NavSettingsBtn.MouseButton1Click:Connect(function()
+	PlayClickSound()
+	SwitchPage("Settings")
+end)
+
+local function CreateBrowserHeader(parentFrame)
+	local BrowserHeader = Instance.new("Frame")
+	BrowserHeader.Name = "BrowserHeader"
+	BrowserHeader.Size = UDim2.new(1, 0, 0, 24)
+	BrowserHeader.BackgroundColor3 = Color3.fromRGB(20, 23, 31)
+	BrowserHeader.BorderSizePixel = 0
+	BrowserHeader.Parent = parentFrame
+
+	local HeaderCorner = Instance.new("UICorner")
+	HeaderCorner.CornerRadius = UDim.new(0, 8)
+	HeaderCorner.Parent = BrowserHeader
+
+	local BrowserHeaderStroke = Instance.new("UIStroke")
+	BrowserHeaderStroke.Name = "BlackWhiteStroke"
+	BrowserHeaderStroke.Thickness = 3
+	BrowserHeaderStroke.Color = Color3.fromRGB(0, 0, 0)
+	BrowserHeaderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	BrowserHeaderStroke.Parent = BrowserHeader
+
+	local BrowserHeaderGradient = Instance.new("UIGradient")
+	BrowserHeaderGradient.Name = "WhiteShine"
+	BrowserHeaderGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
 		ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
 		ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
@@ -454,91 +523,140 @@ local function CreateDot(color)
 		ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 0, 0)),
 		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
 	})
-	DotGradient.Parent = DotStroke
-	local DotShineTween = TweenService:Create(
-		DotGradient,
-		TweenInfo.new(
-			3,
-			Enum.EasingStyle.Linear,
-			Enum.EasingDirection.InOut,
-			-1
-		),
+	BrowserHeaderGradient.Parent = BrowserHeaderStroke
+
+	local BrowserHeaderShineTween = TweenService:Create(
+		BrowserHeaderGradient,
+		TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
 		{ Rotation = 360 }
 	)
-	DotShineTween:Play()
-	return d
+	BrowserHeaderShineTween:Play()
+
+	local FixBottomCorner = Instance.new("Frame")
+	FixBottomCorner.Size = UDim2.new(1, 0, 0, 8)
+	FixBottomCorner.Position = UDim2.new(0, 0, 1, -8)
+	FixBottomCorner.BackgroundColor3 = Color3.fromRGB(20, 23, 31)
+	FixBottomCorner.BorderSizePixel = 0
+	FixBottomCorner.Parent = BrowserHeader
+
+	local DotsHolder = Instance.new("Frame")
+	DotsHolder.Size = UDim2.new(0, 50, 1, 0)
+	DotsHolder.Position = UDim2.new(0, 8, 0, 0)
+	DotsHolder.BackgroundTransparency = 1
+	DotsHolder.Parent = BrowserHeader
+
+	local DotLayout = Instance.new("UIListLayout")
+	DotLayout.FillDirection = Enum.FillDirection.Horizontal
+	DotLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	DotLayout.Padding = UDim.new(0, 5)
+	DotLayout.Parent = DotsHolder
+
+	local function CreateDot(color)
+		local d = Instance.new("Frame")
+		d.Size = UDim2.new(0, 10, 0, 10)
+		d.BackgroundColor3 = color
+		d.BorderSizePixel = 0
+		d.Parent = DotsHolder
+		local c = Instance.new("UICorner")
+		c.CornerRadius = UDim.new(1, 0)
+		c.Parent = d
+		local DotStroke = Instance.new("UIStroke")
+		DotStroke.Name = "BlackWhiteStroke"
+		DotStroke.Thickness = 3
+		DotStroke.Color = Color3.fromRGB(0, 0, 0)
+		DotStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		DotStroke.Parent = d
+		local DotGradient = Instance.new("UIGradient")
+		DotGradient.Name = "WhiteShine"
+		DotGradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+			ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
+			ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
+			ColorSequenceKeypoint.new(0.52, Color3.fromRGB(255, 255, 255)),
+			ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 0, 0)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+		})
+		DotGradient.Parent = DotStroke
+		local DotShineTween = TweenService:Create(
+			DotGradient,
+			TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
+			{ Rotation = 360 }
+		)
+		DotShineTween:Play()
+		return d
+	end
+
+	local CloseDot = CreateDot(Color3.fromRGB(255, 95, 87))
+	CreateDot(Color3.fromRGB(255, 189, 46))
+	CreateDot(Color3.fromRGB(39, 201, 63))
+
+	local CloseClicker = Instance.new("TextButton")
+	CloseClicker.Size = UDim2.new(1, 0, 1, 0)
+	CloseClicker.BackgroundTransparency = 1
+	CloseClicker.Text = ""
+	CloseClicker.Parent = CloseDot
+	CloseClicker.MouseButton1Click:Connect(function()
+		PlayClickSound()
+		ScreenGui:Destroy()
+	end)
+
+	local UrlBar = Instance.new("Frame")
+	UrlBar.Size = UDim2.new(1, -110, 0, 16)
+	UrlBar.Position = UDim2.new(0, 65, 0.5, -8)
+	UrlBar.BackgroundColor3 = Color3.fromRGB(10, 11, 16)
+	UrlBar.BorderSizePixel = 0
+	UrlBar.Parent = BrowserHeader
+
+	local UrlCorner = Instance.new("UICorner")
+	UrlCorner.CornerRadius = UDim.new(0, 4)
+	UrlCorner.Parent = UrlBar
+
+	local UrlStroke = Instance.new("UIStroke")
+	UrlStroke.Name = "BlackWhiteStroke"
+	UrlStroke.Thickness = 3
+	UrlStroke.Color = Color3.fromRGB(0, 0, 0)
+	UrlStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	UrlStroke.Parent = UrlBar
+
+	local UrlGradient = Instance.new("UIGradient")
+	UrlGradient.Name = "WhiteShine"
+	UrlGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+		ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
+		ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
+		ColorSequenceKeypoint.new(0.52, Color3.fromRGB(255, 255, 255)),
+		ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 0, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+	})
+	UrlGradient.Parent = UrlStroke
+
+	local UrlShineTween = TweenService:Create(
+		UrlGradient,
+		TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
+		{ Rotation = 360 }
+	)
+	UrlShineTween:Play()
+
+	local UrlText = Instance.new("TextLabel")
+	UrlText.Size = UDim2.new(1, -10, 1, 0)
+	UrlText.Position = UDim2.new(0, 5, 0, 0)
+	UrlText.BackgroundTransparency = 1
+	UrlText.Text = "https://سوبر-بوبو.com"
+	UrlText.Font = Enum.Font.Code
+	UrlText.TextSize = 10
+	UrlText.TextColor3 = Color3.fromRGB(200, 200, 200)
+	UrlText.TextXAlignment = Enum.TextXAlignment.Left
+	UrlText.Parent = UrlBar
 end
 
-local CloseDot = CreateDot(Color3.fromRGB(255, 95, 87))
-CreateDot(Color3.fromRGB(255, 189, 46))
-CreateDot(Color3.fromRGB(39, 201, 63))
-
-local CloseClicker = Instance.new("TextButton")
-CloseClicker.Size = UDim2.new(1, 0, 1, 0)
-CloseClicker.BackgroundTransparency = 1
-CloseClicker.Text = ""
-CloseClicker.Parent = CloseDot
-CloseClicker.MouseButton1Click:Connect(function()
-	PlayClickSound()
-	ScreenGui:Destroy()
-end)
-
-local UrlBar = Instance.new("Frame")
-UrlBar.Size = UDim2.new(1, -110, 0, 18)
-UrlBar.Position = UDim2.new(0, 65, 0.5, -9)
-UrlBar.BackgroundColor3 = Color3.fromRGB(10, 11, 16)
-UrlBar.BorderSizePixel = 0
-UrlBar.Parent = BrowserHeader
-
-local UrlCorner = Instance.new("UICorner")
-UrlCorner.CornerRadius = UDim.new(0, 4)
-UrlCorner.Parent = UrlBar
-
-local UrlStroke = Instance.new("UIStroke")
-UrlStroke.Name = "BlackWhiteStroke"
-UrlStroke.Thickness = 3
-UrlStroke.Color = Color3.fromRGB(0, 0, 0)
-UrlStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-UrlStroke.Parent = UrlBar
-
-local UrlGradient = Instance.new("UIGradient")
-UrlGradient.Name = "WhiteShine"
-UrlGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.35, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.52, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-})
-UrlGradient.Parent = UrlStroke
-
-local UrlShineTween = TweenService:Create(
-    UrlGradient,
-    TweenInfo.new(
-        3,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1
-    ),
-    { Rotation = 360 }
-)
-UrlShineTween:Play()
-
-local UrlText = Instance.new("TextLabel")
-UrlText.Size = UDim2.new(1, -10, 1, 0)
-UrlText.Position = UDim2.new(0, 5, 0, 0)
-UrlText.BackgroundTransparency = 1
-UrlText.Text = "https://سوبر-بوبو.com"
-UrlText.Font = Enum.Font.Code
-UrlText.TextSize = 10
-UrlText.TextColor3 = Color3.fromRGB(200, 200, 200)
-UrlText.TextXAlignment = Enum.TextXAlignment.Left
-UrlText.Parent = UrlBar
+CreateBrowserHeader(TargetPageFrame)
+CreateBrowserHeader(OtherPageFrame)
+CreateBrowserHeader(SettingsPageFrame)
+CreateBrowserHeader(ChangeBgFrame)
 
 local SearchBox = Instance.new("TextBox")
 SearchBox.Size = UDim2.new(1, -16, 0, 28)
-SearchBox.Position = UDim2.new(0, 8, 0, 34)
+SearchBox.Position = UDim2.new(0, 8, 0, 62)
 SearchBox.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
 SearchBox.BackgroundTransparency = 0.4
 SearchBox.PlaceholderText = "اسم اللاعب..."
@@ -548,7 +666,7 @@ SearchBox.Font = Enum.Font.GothamMedium
 SearchBox.TextSize = 11
 SearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 SearchBox.ClearTextOnFocus = false
-SearchBox.Parent = MainContentFrame
+SearchBox.Parent = TargetPageFrame
 
 local SearchCorner = Instance.new("UICorner")
 SearchCorner.CornerRadius = UDim.new(0, 6)
@@ -575,19 +693,14 @@ SearchGradient.Parent = SearchStroke
 
 local SearchShineTween = TweenService:Create(
     SearchGradient,
-    TweenInfo.new(
-        3,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1
-    ),
+    TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
     { Rotation = 360 }
 )
 SearchShineTween:Play()
 
 local CmdBarBox = Instance.new("TextBox")
 CmdBarBox.Size = UDim2.new(1, -50, 0, 28)
-CmdBarBox.Position = UDim2.new(0, 8, 0, 66)
+CmdBarBox.Position = UDim2.new(0, 8, 0, 94)
 CmdBarBox.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
 CmdBarBox.BackgroundTransparency = 0.4
 CmdBarBox.PlaceholderText = "خانة الاوامر [CmdBar]"
@@ -597,7 +710,7 @@ CmdBarBox.Font = Enum.Font.GothamMedium
 CmdBarBox.TextSize = 11
 CmdBarBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 CmdBarBox.ClearTextOnFocus = false
-CmdBarBox.Parent = MainContentFrame
+CmdBarBox.Parent = TargetPageFrame
 
 local CmdCorner = Instance.new("UICorner")
 CmdCorner.CornerRadius = UDim.new(0, 6)
@@ -624,19 +737,14 @@ CmdGradient.Parent = CmdStroke
 
 local CmdShineTween = TweenService:Create(
     CmdGradient,
-    TweenInfo.new(
-        3,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1
-    ),
+    TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
     { Rotation = 360 }
 )
 CmdShineTween:Play()
 
 local HelpBtn = Instance.new("TextButton")
 HelpBtn.Size = UDim2.new(0, 28, 0, 28)
-HelpBtn.Position = UDim2.new(1, -36, 0, 66)
+HelpBtn.Position = UDim2.new(1, -36, 0, 94)
 HelpBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
 HelpBtn.BackgroundTransparency = 0.4
 HelpBtn.Text = "?"
@@ -644,7 +752,7 @@ HelpBtn.Font = Enum.Font.GothamBold
 HelpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 HelpBtn.TextSize = 14
 HelpBtn.AutoButtonColor = false
-HelpBtn.Parent = MainContentFrame
+HelpBtn.Parent = TargetPageFrame
 
 local HelpCorner = Instance.new("UICorner")
 HelpCorner.CornerRadius = UDim.new(0, 6)
@@ -671,12 +779,7 @@ HelpGradient.Parent = HelpStroke
 
 local HelpShineTween = TweenService:Create(
     HelpGradient,
-    TweenInfo.new(
-        3,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1
-    ),
+    TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
     { Rotation = 360 }
 )
 HelpShineTween:Play()
@@ -688,11 +791,11 @@ end)
 
 local Card = Instance.new("Frame")
 Card.Size = UDim2.new(1, -16, 0, 122)
-Card.Position = UDim2.new(0, 8, 0, 100)
+Card.Position = UDim2.new(0, 8, 0, 126)
 Card.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
 Card.BackgroundTransparency = 0.4
 Card.BorderSizePixel = 0
-Card.Parent = MainContentFrame
+Card.Parent = TargetPageFrame
 
 local CardCorner = Instance.new("UICorner")
 CardCorner.CornerRadius = UDim.new(0, 6)
@@ -719,12 +822,7 @@ CardGradient.Parent = CardStroke
 
 local CardShineTween = TweenService:Create(
     CardGradient,
-    TweenInfo.new(
-        3,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1
-    ),
+    TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
     { Rotation = 360 }
 )
 CardShineTween:Play()
@@ -762,12 +860,7 @@ AvatarGradient.Parent = AvatarStroke
 
 local AvatarShineTween = TweenService:Create(
     AvatarGradient,
-    TweenInfo.new(
-        3,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut,
-        -1
-    ),
+    TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
     { Rotation = 360 }
 )
 AvatarShineTween:Play()
@@ -820,12 +913,7 @@ local function CreateInfoLabel(order)
 	
 	local LblShineTween = TweenService:Create(
 		LblGradient,
-		TweenInfo.new(
-			3,
-			Enum.EasingStyle.Linear,
-			Enum.EasingDirection.InOut,
-			-1
-		),
+		TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1),
 		{ Rotation = 360 }
 	)
 	LblShineTween:Play()
@@ -846,18 +934,18 @@ DisplayNameLbl.Text = "Username: "
 IdLbl.Text = "ID: "
 JoinedLbl.Text = "Joined: "
 
-local ButtonsContainer = Instance.new("Frame")
-ButtonsContainer.Size = UDim2.new(1, -16, 0, 280)
-ButtonsContainer.Position = UDim2.new(0, 8, 0, 230)
-ButtonsContainer.BackgroundTransparency = 1
-ButtonsContainer.Parent = MainContentFrame
+local TargetButtonsContainer = Instance.new("Frame")
+TargetButtonsContainer.Size = UDim2.new(1, -16, 0, 250)
+TargetButtonsContainer.Position = UDim2.new(0, 8, 0, 256)
+TargetButtonsContainer.BackgroundTransparency = 1
+TargetButtonsContainer.Parent = TargetPageFrame
 
-local ButtonsList = Instance.new("UIListLayout")
-ButtonsList.SortOrder = Enum.SortOrder.LayoutOrder
-ButtonsList.Padding = UDim.new(0, 6)
-ButtonsList.Parent = ButtonsContainer
+local TargetButtonsList = Instance.new("UIListLayout")
+TargetButtonsList.SortOrder = Enum.SortOrder.LayoutOrder
+TargetButtonsList.Padding = UDim.new(0, 6)
+TargetButtonsList.Parent = TargetButtonsContainer
 
-local function CreateStyledButton(text, order)
+local function CreateStyledButtonInContainer(text, order, container)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(1, 0, 0, 32)
 	btn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
@@ -868,7 +956,7 @@ local function CreateStyledButton(text, order)
 	btn.TextSize = 12
 	btn.AutoButtonColor = false
 	btn.LayoutOrder = order
-	btn.Parent = ButtonsContainer
+	btn.Parent = container
 
 	local btnImg = Instance.new("ImageLabel")
 	btnImg.Size = UDim2.new(1, 0, 1, 0)
@@ -877,6 +965,7 @@ local function CreateStyledButton(text, order)
 	btnImg.ScaleType = Enum.ScaleType.Crop
 	btnImg.ImageTransparency = 0.75
 	btnImg.Parent = btn
+	RegisterDynamicBg(btnImg)
 
 	local BtnCorner = Instance.new("UICorner")
 	BtnCorner.CornerRadius = UDim.new(0, 6)
@@ -921,16 +1010,261 @@ local function CreateStyledButton(text, order)
 	return btn
 end
 
-local ActionBtn = CreateStyledButton("تخريب اللاعب", 1)
-local DogBtn = CreateStyledButton("خلي الناس كلاب", 2)
-local FreezeBtn = CreateStyledButton("ما يمديه يتحرك", 3)
-local SizeBtn = CreateStyledButton("تكبير الناس", 4)
-local ChangeBgBtn = CreateStyledButton("تغيير صورة الخلفية", 5)
+local ActionBtn = CreateStyledButtonInContainer("تخريب اللاعب", 1, TargetButtonsContainer)
+local FreezeBtn = CreateStyledButtonInContainer("ما يمديه يتحرك", 2, TargetButtonsContainer)
+
+local OtherButtonsContainer = Instance.new("Frame")
+OtherButtonsContainer.Size = UDim2.new(1, -16, 0, 420)
+OtherButtonsContainer.Position = UDim2.new(0, 8, 0, 62)
+OtherButtonsContainer.BackgroundTransparency = 1
+OtherButtonsContainer.Parent = OtherPageFrame
+
+local OtherButtonsList = Instance.new("UIListLayout")
+OtherButtonsList.SortOrder = Enum.SortOrder.LayoutOrder
+OtherButtonsList.Padding = UDim.new(0, 6)
+OtherButtonsList.Parent = OtherButtonsContainer
+
+local DogBtn = CreateStyledButtonInContainer("خلي الناس كلاب", 1, OtherButtonsContainer)
+DogBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local SizeBtn = CreateStyledButtonInContainer("تكبير الناس", 2, OtherButtonsContainer)
+SizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local ChangeBgBtn = CreateStyledButtonInContainer("تغيير صورة الخلفية", 3, OtherButtonsContainer)
+ChangeBgBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 local AdminProtectBtn = nil
 if PremiumList[LocalPlayer.Name] then
-	AdminProtectBtn = CreateStyledButton("حماية الادمن", 6)
+	AdminProtectBtn = CreateStyledButtonInContainer("حماية الادمن قوية", 4, OtherButtonsContainer)
 end
+
+local SettingsScroll = Instance.new("ScrollingFrame")
+SettingsScroll.Size = UDim2.new(1, -16, 1, -70)
+SettingsScroll.Position = UDim2.new(0, 8, 0, 62)
+SettingsScroll.BackgroundTransparency = 1
+SettingsScroll.BorderSizePixel = 0
+SettingsScroll.CanvasSize = UDim2.new(0, 0, 0, 680)
+SettingsScroll.Parent = SettingsPageFrame
+
+local SettingsList = Instance.new("UIListLayout")
+SettingsList.SortOrder = Enum.SortOrder.LayoutOrder
+SettingsList.Padding = UDim.new(0, 8)
+SettingsList.Parent = SettingsScroll
+
+local function CreateSettingToggle(cmdKey, displayName, order)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 0, 32)
+	btn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
+	btn.BackgroundTransparency = 0.4
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 12
+	btn.LayoutOrder = order
+	btn.Parent = SettingsScroll
+
+	local state = TrollingSettings[cmdKey]
+	btn.Text = displayName .. " : " .. (state and "تفعيل (True)" or "تعطيل (False)")
+	btn.TextColor3 = state and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+
+	local btnImg = Instance.new("ImageLabel")
+	btnImg.Size = UDim2.new(1, 0, 1, 0)
+	btnImg.BackgroundTransparency = 1
+	btnImg.Image = ChosenBgImage
+	btnImg.ScaleType = Enum.ScaleType.Crop
+	btnImg.ImageTransparency = 0.75
+	btnImg.Parent = btn
+	RegisterDynamicBg(btnImg)
+
+	local BtnCorner = Instance.new("UICorner")
+	BtnCorner.CornerRadius = UDim.new(0, 6)
+	BtnCorner.Parent = btn
+	local BtnImgCorner = Instance.new("UICorner")
+	BtnImgCorner.CornerRadius = UDim.new(0, 6)
+	BtnImgCorner.Parent = btnImg
+
+	local BtnStroke = Instance.new("UIStroke")
+	BtnStroke.Thickness = 2
+	BtnStroke.Color = Color3.fromRGB(0, 0, 0)
+	BtnStroke.Parent = btn
+
+	btn.MouseButton1Click:Connect(function()
+		PlayClickSound()
+		TrollingSettings[cmdKey] = not TrollingSettings[cmdKey]
+		local newState = TrollingSettings[cmdKey]
+		btn.Text = displayName .. " : " .. (newState and "تفعيل (True)" or "تعطيل (False)")
+		btn.TextColor3 = newState and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+	end)
+end
+
+CreateSettingToggle("wormify", "امر DEDSEC wormify", 1)
+CreateSettingToggle("dog", "امر DEDSEC dog", 2)
+CreateSettingToggle("aura", "امر DEDSEC aura", 3)
+CreateSettingToggle("shine", "امر DEDSEC shine", 4)
+CreateSettingToggle("color", "امر DEDSEC color", 5)
+CreateSettingToggle("fat", "امر DEDSEC fat", 6)
+CreateSettingToggle("thin", "امر DEDSEC thin", 7)
+CreateSettingToggle("size", "امر DEDSEC size", 8)
+CreateSettingToggle("height", "امر DEDSEC height", 9)
+CreateSettingToggle("sit", "امر DEDSEC sit", 10)
+CreateSettingToggle("titlepk", "امر DEDSEC titlepk", 11)
+
+local CopySpeedBtn = Instance.new("TextButton")
+CopySpeedBtn.Size = UDim2.new(1, 0, 0, 32)
+CopySpeedBtn.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
+CopySpeedBtn.BackgroundTransparency = 0.4
+CopySpeedBtn.Text = "وضع سرعة النسخ : بطيئة"
+CopySpeedBtn.Font = Enum.Font.GothamBold
+CopySpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CopySpeedBtn.TextSize = 12
+CopySpeedBtn.LayoutOrder = 12
+CopySpeedBtn.Parent = SettingsScroll
+
+local SpeedBtnImg = Instance.new("ImageLabel")
+SpeedBtnImg.Size = UDim2.new(1, 0, 1, 0)
+SpeedBtnImg.BackgroundTransparency = 1
+SpeedBtnImg.Image = ChosenBgImage
+SpeedBtnImg.ScaleType = Enum.ScaleType.Crop
+SpeedBtnImg.ImageTransparency = 0.75
+SpeedBtnImg.Parent = CopySpeedBtn
+RegisterDynamicBg(SpeedBtnImg)
+
+local SpeedCorner = Instance.new("UICorner")
+SpeedCorner.CornerRadius = UDim.new(0, 6)
+SpeedCorner.Parent = CopySpeedBtn
+local SpeedImgCorner = Instance.new("UICorner")
+SpeedImgCorner.CornerRadius = UDim.new(0, 6)
+SpeedImgCorner.Parent = SpeedBtnImg
+
+local SpeedStroke = Instance.new("UIStroke")
+SpeedStroke.Thickness = 2
+SpeedStroke.Color = Color3.fromRGB(0, 0, 0)
+SpeedStroke.Parent = CopySpeedBtn
+
+CopySpeedBtn.MouseButton1Click:Connect(function()
+	PlayClickSound()
+	if CopySpeedMode == "slow" then
+		CopySpeedMode = "fast"
+		CopySpeedBtn.Text = "وضع سرعة النسخ : سريعة جدا"
+		SendCustomNotification("سرعة النسخ", "الان السرعة سريعه جدا", nil)
+	else
+		CopySpeedMode = "slow"
+		CopySpeedBtn.Text = "وضع سرعة النسخ : بطيئة"
+		SendCustomNotification("سرعة النسخ", "الان سرعة النسخ بطيئة", nil)
+	end
+end)
+
+local MultiplierBoxFrame = Instance.new("Frame")
+MultiplierBoxFrame.Size = UDim2.new(1, 0, 0, 40)
+MultiplierBoxFrame.BackgroundTransparency = 1
+MultiplierBoxFrame.LayoutOrder = 13
+MultiplierBoxFrame.Parent = SettingsScroll
+
+local MultiplierLabel = Instance.new("TextLabel")
+MultiplierLabel.Size = UDim2.new(0.6, 0, 1, 0)
+MultiplierLabel.BackgroundTransparency = 1
+MultiplierLabel.Text = "سرعة النسخ (من 1 الى 5):"
+MultiplierLabel.Font = Enum.Font.GothamBold
+MultiplierLabel.TextSize = 11
+MultiplierLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+MultiplierLabel.TextXAlignment = Enum.TextXAlignment.Left
+MultiplierLabel.Parent = MultiplierBoxFrame
+
+local MultiplierInput = Instance.new("TextBox")
+MultiplierInput.Size = UDim2.new(0.38, 0, 1, 0)
+MultiplierInput.Position = UDim2.new(0.62, 0, 0, 0)
+MultiplierInput.BackgroundColor3 = Color3.fromRGB(18, 22, 30)
+MultiplierInput.BackgroundTransparency = 0.4
+MultiplierInput.Text = "1"
+MultiplierInput.Font = Enum.Font.GothamBold
+MultiplierInput.TextSize = 12
+MultiplierInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+MultiplierInput.ClearTextOnFocus = false
+MultiplierInput.Parent = MultiplierBoxFrame
+
+local MultiplierCorner = Instance.new("UICorner")
+MultiplierCorner.CornerRadius = UDim.new(0, 6)
+MultiplierCorner.Parent = MultiplierInput
+
+local MultiplierStroke = Instance.new("UIStroke")
+MultiplierStroke.Thickness = 2
+MultiplierStroke.Color = Color3.fromRGB(0, 0, 0)
+MultiplierStroke.Parent = MultiplierInput
+
+MultiplierInput:GetPropertyChangedSignal("Text"):Connect(function()
+	local num = tonumber(MultiplierInput.Text)
+	if num then
+		if num < 1 then num = 1 end
+		if num > 5 then num = 5 end
+		MultiplierValue = num
+	end
+end)
+
+local SaveSettingsBtn = Instance.new("TextButton")
+SaveSettingsBtn.Size = UDim2.new(1, 0, 0, 36)
+SaveSettingsBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+SaveSettingsBtn.BackgroundTransparency = 0.2
+SaveSettingsBtn.Text = "حفظ الاعدادات"
+SaveSettingsBtn.Font = Enum.Font.GothamBold
+SaveSettingsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SaveSettingsBtn.TextSize = 13
+SaveSettingsBtn.LayoutOrder = 14
+SaveSettingsBtn.Parent = SettingsScroll
+
+local SaveCorner = Instance.new("UICorner")
+SaveCorner.CornerRadius = UDim.new(0, 6)
+SaveCorner.Parent = SaveSettingsBtn
+
+local SaveStroke = Instance.new("UIStroke")
+SaveStroke.Thickness = 2
+SaveStroke.Color = Color3.fromRGB(0, 0, 0)
+SaveStroke.Parent = SaveSettingsBtn
+
+local function LoadSavedSettings()
+	pcall(function()
+		if isfile and readfile and isfile("SuperBoboConfig.json") then
+			local data = HttpService:JSONDecode(readfile("SuperBoboConfig.json"))
+			if data then
+				if data.TrollingSettings then
+					for k, v in pairs(data.TrollingSettings) do
+						TrollingSettings[k] = v
+					end
+				end
+				if data.CopySpeedMode then
+					CopySpeedMode = data.CopySpeedMode
+					if CopySpeedMode == "fast" then
+						CopySpeedBtn.Text = "وضع سرعة النسخ : سريعة جدا"
+					else
+						CopySpeedBtn.Text = "وضع سرعة النسخ : بطيئة"
+					end
+				end
+				if data.MultiplierValue then
+					MultiplierValue = data.MultiplierValue
+					MultiplierInput.Text = tostring(MultiplierValue)
+				end
+			end
+		end
+	end)
+end
+
+local function SaveConfig()
+	pcall(function()
+		if writefile then
+			local data = {
+				TrollingSettings = TrollingSettings,
+				CopySpeedMode = CopySpeedMode,
+				MultiplierValue = MultiplierValue
+			}
+			writefile("SuperBoboConfig.json", HttpService:JSONEncode(data))
+			SendCustomNotification("الحفظ", "تم حفظ الاعدادات بنجاح!", nil)
+		end
+	end)
+end
+
+SaveSettingsBtn.MouseButton1Click:Connect(function()
+	PlayClickSound()
+	SaveConfig()
+end)
+
+LoadSavedSettings()
 
 local SelectedPlayer = nil
 local TrollingActive = false
@@ -1056,21 +1390,21 @@ ActionBtn.MouseButton1Click:Connect(function()
 					local currentSignal, currentPrefix = GetSignalAndPrefix()
 					
 					if currentSignal then
-						local commands = {
-							currentPrefix .. "wormify " .. targetName,
-							currentPrefix .. "dog " .. targetName,
-							currentPrefix .. "aura " .. targetName,
-							currentPrefix .. "shine " .. targetName,
-							currentPrefix .. "color " .. targetName .. " p",
-							currentPrefix .. "fat " .. targetName,
-							currentPrefix .. "thin " .. targetName,
-							currentPrefix .. "size " .. targetName .. " 5",
-							currentPrefix .. "height " .. targetName .. " 5",
-							currentPrefix.. "sit " .. targetName,
-							currentPrefix .. "titlepk " .. targetName .. " آه بشويش ي بوبوووو"
-						}
+						local commands = {}
+						if TrollingSettings.wormify then table.insert(commands, currentPrefix .. "wormify " .. targetName) end
+						if TrollingSettings.dog then table.insert(commands, currentPrefix .. "dog " .. targetName) end
+						if TrollingSettings.aura then table.insert(commands, currentPrefix .. "aura " .. targetName) end
+						if TrollingSettings.shine then table.insert(commands, currentPrefix .. "shine " .. targetName) end
+						if TrollingSettings.color then table.insert(commands, currentPrefix .. "color " .. targetName .. " p") end
+						if TrollingSettings.fat then table.insert(commands, currentPrefix .. "fat " .. targetName) end
+						if TrollingSettings.thin then table.insert(commands, currentPrefix .. "thin " .. targetName) end
+						if TrollingSettings.size then table.insert(commands, currentPrefix .. "size " .. targetName .. " 5") end
+						if TrollingSettings.height then table.insert(commands, currentPrefix .. "height " .. targetName .. " 5") end
+						if TrollingSettings.sit then table.insert(commands, currentPrefix .. "sit " .. targetName) end
+						if TrollingSettings.titlepk then table.insert(commands, currentPrefix .. "titlepk " .. targetName .. " آه بشويش ي بوبوووو") end
 						
-						for i = 1, 1 do
+						local loops = MultiplierValue
+						for i = 1, loops do
 							if not TrollingActive or not SelectedPlayer then break end
 							for _, cmd in ipairs(commands) do
 								task.spawn(function()
@@ -1080,7 +1414,11 @@ ActionBtn.MouseButton1Click:Connect(function()
 						end
 					end
 				end
-				task.wait()
+				if CopySpeedMode == "fast" then
+					task.wait(0.01)
+				else
+					task.wait(0.2)
+				end
 			end
 		end)
 	else
@@ -1136,7 +1474,8 @@ FreezeBtn.MouseButton1Click:Connect(function()
 					if signal then
 						local cmd = prefix .. "re " .. targetName
 						
-						for i = 1, 1 do
+						local loops = MultiplierValue
+						for i = 1, loops do
 							if not FreezingActive or not SelectedPlayer then break end
 							task.spawn(function()
 								signal:InvokeServer(cmd)
@@ -1144,7 +1483,11 @@ FreezeBtn.MouseButton1Click:Connect(function()
 						end
 					end
 				end
-				task.wait()
+				if CopySpeedMode == "fast" then
+					task.wait(0.01)
+				else
+					task.wait(0.2)
+				end
 			end
 		end)
 	else
@@ -1158,26 +1501,36 @@ if AdminProtectBtn then
 		AdminProtectActive = not AdminProtectActive
 		if AdminProtectActive then
 			AdminProtectBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
+			SendCustomNotification("حماية الادمن", "تم تفعيل الحماية القوية ضد جميع الرتب", nil)
 		else
 			AdminProtectBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
+			SendCustomNotification("حماية الادمن", "تم تعطيل الحماية", nil)
 		end
 	end)
 end
 
 task.spawn(function()
-	while task.wait(1) do
+	while true do
 		if AdminProtectActive then
 			local signal, prefix = GetSignalAndPrefix()
 			if signal then
-				signal:InvokeServer(prefix .. "re " .. LocalPlayer.Name)
+				task.spawn(function()
+					signal:InvokeServer(prefix .. "unfreeze me")
+					signal:InvokeServer(prefix .. "unpunish me")
+					signal:InvokeServer(prefix .. "unblind me")
+					signal:InvokeServer(prefix .. "unmute me")
+					signal:InvokeServer(prefix .. "unloopkill me")
+					signal:InvokeServer(prefix .. "unjail me")
+				end)
 			end
 		end
+		task.wait(0.1)
 	end
 end)
 
 local BgTitle = Instance.new("TextLabel")
-BgTitle.Size = UDim2.new(1, 0, 0, 40)
-BgTitle.Position = UDim2.new(0, 0, 0, 10)
+BgTitle.Size = UDim2.new(1, 0, 0, 30)
+BgTitle.Position = UDim2.new(0, 0, 0, 30)
 BgTitle.BackgroundTransparency = 1
 BgTitle.Text = "اختر صورة الخلفية"
 BgTitle.Font = Enum.Font.GothamBold
@@ -1186,8 +1539,8 @@ BgTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 BgTitle.Parent = ChangeBgFrame
 
 local ScrollBg = Instance.new("ScrollingFrame")
-ScrollBg.Size = UDim2.new(1, -20, 1, -60)
-ScrollBg.Position = UDim2.new(0, 10, 0, 50)
+ScrollBg.Size = UDim2.new(1, -20, 1, -70)
+ScrollBg.Position = UDim2.new(0, 10, 0, 65)
 ScrollBg.BackgroundTransparency = 1
 ScrollBg.BorderSizePixel = 0
 ScrollBg.CanvasSize = UDim2.new(0, 0, 0, 600)
@@ -1197,13 +1550,6 @@ local Grid = Instance.new("UIGridLayout")
 Grid.CellSize = UDim2.new(0, 110, 0, 110)
 Grid.CellPadding = UDim2.new(0, 10, 0, 10)
 Grid.Parent = ScrollBg
-
-local function ApplyNewBg(imgUrl)
-	ChosenBgImage = imgUrl
-	ScreenGui:Destroy()
-	task.wait(0.1)
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/TVX7s/Soupr-Bobo-script/refs/heads/main/soupr-bobo🔴🟡🟢.lua"))()
-end
 
 for idx, imgUrl in ipairs(BackgroundImagesList) do
 	local ImgSquare = Instance.new("ImageButton")
@@ -1222,17 +1568,14 @@ for idx, imgUrl in ipairs(BackgroundImagesList) do
 
 	ImgSquare.MouseButton1Click:Connect(function()
 		PlayClickSound()
-		BackgroundImage.Image = imgUrl
-		ToggleBtn.Image = imgUrl
-		ChangeBgFrame.Visible = false
-		MainContentFrame.Visible = true
+		UpdateAllBgElements(imgUrl)
+		SwitchPage("Target")
 	end)
 end
 
 ChangeBgBtn.MouseButton1Click:Connect(function()
 	PlayClickSound()
-	MainContentFrame.Visible = false
-	ChangeBgFrame.Visible = true
+	SwitchPage("Bg")
 end)
 
 task.spawn(function()
